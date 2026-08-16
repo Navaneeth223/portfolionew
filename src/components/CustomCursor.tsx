@@ -25,6 +25,9 @@ export default function CustomCursor() {
     const ring = ringRef.current;
     if (!dot || !ring) return;
 
+    // Enable cursor: none mode on html element
+    document.documentElement.classList.add('has-custom-cursor');
+
     // Set initial centering offsets & hide until first pointer movement
     gsap.set([dot, ring], {
       xPercent: -50,
@@ -157,7 +160,7 @@ export default function CustomCursor() {
         gsap.to(ring, {
           borderColor: 'rgba(124, 255, 158, 0.4)',
           backgroundColor: 'rgba(0, 0, 0, 0)',
-          duration: 0.2,
+          duration: 0.25,
         });
         gsap.to(dot, {
           scale: 1,
@@ -193,6 +196,7 @@ export default function CustomCursor() {
 
     return () => {
       cancelAnimationFrame(animFrameId);
+      document.documentElement.classList.remove('has-custom-cursor');
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('mousemove', handlePointerMove);
       window.removeEventListener('pointerenter', handlePointerMove);

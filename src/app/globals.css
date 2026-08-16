@@ -35,6 +35,17 @@ body {
   selection-color: #0B0D0A;
 }
 
+/* Hide native OS pointer when custom cursor is active for award-tier UI immersion */
+html.has-custom-cursor,
+html.has-custom-cursor body,
+html.has-custom-cursor a,
+html.has-custom-cursor button,
+html.has-custom-cursor [role="button"],
+html.has-custom-cursor input,
+html.has-custom-cursor textarea {
+  cursor: none !important;
+}
+
 ::selection {
   background: #7CFF9E;
   color: #0B0D0A;
