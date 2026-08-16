@@ -15,6 +15,7 @@ import Projects from '@/components/sections/Projects';
 import MoreWork from '@/components/sections/MoreWork';
 import Contact from '@/components/sections/Contact';
 import Footer from '@/components/Footer';
+import RadialContextMenu from '@/components/RadialContextMenu';
 
 // ThreeBackground dynamically imported with ssr: false (touches WebGL canvas)
 const ThreeBackground = dynamic(() => import('@/components/ThreeBackground'), {
@@ -35,6 +36,9 @@ export default function Home() {
 
       {/* Custom Precision Cursor */}
       <CustomCursor />
+
+      {/* Radial Right-Click Context Menu (fine pointer / desktop only) */}
+      <RadialContextMenu />
 
       {/* Navigation Header */}
       <Nav />

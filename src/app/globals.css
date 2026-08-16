@@ -107,3 +107,68 @@ html.has-custom-cursor textarea {
 .animate-pulse-signal {
   animation: pulse-signal 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
+
+/* ─── Radial Context Menu ──────────────────────────────────────────────────── */
+
+/* Shockwave ripple fires at click origin */
+@keyframes rcm-shockwave {
+  0%   { transform: translate(-50%, -50%) scale(0); opacity: 0.55; }
+  60%  { opacity: 0.12; }
+  100% { transform: translate(-50%, -50%) scale(6); opacity: 0; }
+}
+
+.rcm-shockwave {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1.5px solid var(--color-signal, #7CFF9E);
+  transform: translate(-50%, -50%) scale(0);
+  opacity: 0;
+}
+
+.rcm-shockwave--active {
+  animation: rcm-shockwave 550ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Circular icon button */
+.rcm-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background-color: var(--color-surface, #14170F);
+  border: 1px solid var(--color-line, rgba(242,240,230,0.09));
+  color: var(--color-ink, #F2F0E6);
+  transition: background-color 180ms ease, color 180ms ease, border-color 180ms ease, transform 120ms ease;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.45);
+}
+
+.rcm-btn:hover {
+  background-color: var(--color-ink, #F2F0E6);
+  color: var(--color-bg, #0B0D0A);
+  border-color: var(--color-ink, #F2F0E6);
+  transform: scale(1.1);
+}
+
+.rcm-btn:active {
+  transform: scale(0.92);
+}
+
+/* Item label */
+.rcm-label {
+  font-family: var(--font-mono, monospace);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-inkdim, #96968A);
+  line-height: 1;
+  white-space: nowrap;
+  pointer-events: none;
+  transition: color 180ms ease;
+}
+
+/* Label follows button hover (sibling in .rcm-btn parent) */
+div:has(> .rcm-btn:hover) .rcm-label {
+  color: var(--color-signal, #7CFF9E);
+}
