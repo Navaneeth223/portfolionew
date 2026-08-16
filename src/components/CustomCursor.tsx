@@ -8,7 +8,6 @@ export default function CustomCursor() {
   const ringRef = useRef<HTMLDivElement>(null);
   const labelRef = useRef<HTMLSpanElement>(null);
 
-  const [isEnabled, setIsEnabled] = useState(false);
   const [cursorText, setCursorText] = useState('');
 
   // Ref for persistent physics & pointer state
@@ -22,16 +21,11 @@ export default function CustomCursor() {
   });
 
   useEffect(() => {
-    // Disable on coarse pointer (touch devices)
-    if (window.matchMedia('(pointer: coarse)').matches) return;
-
-    setIsEnabled(true);
-
     const dot = dotRef.current;
     const ring = ringRef.current;
     if (!dot || !ring) return;
 
-    // Center offsets and hide initially until first move
+    // Set initial centering offsets & hide until first pointer movement
     gsap.set([dot, ring], {
       xPercent: -50,
       yPercent: -50,
@@ -45,12 +39,12 @@ export default function CustomCursor() {
       const clientX = e.clientX;
       const clientY = e.clientY;
 
-      if (clientX === undefined || clientY === undefined) return;
+      if (clientX === undefined || clientY === undefined || (clientX === 0 && clientY === 0)) return;
 
       state.mouseX = clientX;
       state.mouseY = clientY;
 
-      // On first event: snap position instantly & fade in from 0 opacity
+      // On first real pointer movement: snap position instantly & fade in
       if (!state.initialized) {
         state.lastX = clientX;
         state.lastY = clientY;
@@ -63,7 +57,7 @@ export default function CustomCursor() {
 
         gsap.to([dot, ring], {
           opacity: 1,
-          duration: 0.3,
+          duration: 0.2,
           ease: 'power2.out',
         });
       }
@@ -72,7 +66,7 @@ export default function CustomCursor() {
       gsap.to(dot, {
         x: state.mouseX,
         y: state.mouseY,
-        duration: 0.08,
+        duration: 0.06,
         ease: 'power2.out',
       });
     };
@@ -88,8 +82,8 @@ export default function CustomCursor() {
       const velX = state.mouseX - state.lastX;
       const velY = state.mouseY - state.lastY;
 
-      state.lastX += (state.mouseX - state.lastX) * 0.15;
-      state.lastY += (state.mouseY - state.lastY) * 0.15;
+      state.lastX += (state.mouseX - state.lastX) * 0.18;
+      state.lastY += (state.mouseY - state.lastY) * 0.18;
 
       const speed = Math.sqrt(velX * velX + velY * velY);
       const angle = Math.atan2(velY, velX) * (180 / Math.PI);
@@ -139,7 +133,7 @@ export default function CustomCursor() {
         gsap.to(ring, {
           borderColor: '#7CFF9E',
           backgroundColor: 'rgba(124, 255, 158, 0.15)',
-          duration: 0.25,
+          duration: 0.2,
         });
         gsap.to(dot, {
           scale: 0.5,
@@ -163,7 +157,7 @@ export default function CustomCursor() {
         gsap.to(ring, {
           borderColor: 'rgba(124, 255, 158, 0.4)',
           backgroundColor: 'rgba(0, 0, 0, 0)',
-          duration: 0.25,
+          duration: 0.2,
         });
         gsap.to(dot, {
           scale: 1,
@@ -182,12 +176,12 @@ export default function CustomCursor() {
     const handleMouseUp = () => {
       gsap.to(ring, {
         scale: state.isHovered ? 1.6 : 1,
-        duration: 0.4,
+        duration: 0.3,
         ease: 'elastic.out(1.2, 0.4)',
       });
       gsap.to(dot, {
         scale: state.isHovered ? 0.5 : 1,
-        duration: 0.3,
+        duration: 0.2,
         ease: 'power2.out',
       });
     };
@@ -208,8 +202,6 @@ export default function CustomCursor() {
       document.removeEventListener('mouseup', handleMouseUp);
     };
   }, []);
-
-  if (!isEnabled) return null;
 
   return (
     <>
