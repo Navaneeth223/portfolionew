@@ -7,76 +7,93 @@ export default function CustomCursor() {
   const dotRef = useRef<HTMLDivElement>(null);
   const ringRef = useRef<HTMLDivElement>(null);
   const labelRef = useRef<HTMLSpanElement>(null);
+
   const [isEnabled, setIsEnabled] = useState(false);
   const [cursorText, setCursorText] = useState('');
-  const [isHovered, setIsHovered] = useState(false);
-  const [isClicking, setIsClicking] = useState(false);
+
+  // Refs for persistent physics state without triggering useEffect re-runs
+  const stateRef = useRef({
+    mouseX: -100,
+    mouseY: -100,
+    lastX: -100,
+    lastY: -100,
+    isHovered: false,
+    initialized: false,
+  });
 
   useEffect(() => {
     // Disable on coarse pointer (touch devices)
     if (window.matchMedia('(pointer: coarse)').matches) return;
+
     setIsEnabled(true);
+    document.documentElement.classList.add('has-custom-cursor');
 
     const dot = dotRef.current;
     const ring = ringRef.current;
     if (!dot || !ring) return;
 
-    let mouseX = -100;
-    let mouseY = -100;
-    let lastX = -100;
-    let lastY = -100;
+    // Set initial centering offsets via GSAP once
+    gsap.set(dot, { xPercent: -50, yPercent: -50 });
+    gsap.set(ring, { xPercent: -50, yPercent: -50 });
 
-    let velX = 0;
-    let velY = 0;
+    const state = stateRef.current;
 
     const handleMouseMove = (e: MouseEvent) => {
-      mouseX = e.clientX;
-      mouseY = e.clientY;
+      state.mouseX = e.clientX;
+      state.mouseY = e.clientY;
 
-      // Fast dot tracking
+      if (!state.initialized) {
+        state.lastX = e.clientX;
+        state.lastY = e.clientY;
+        state.initialized = true;
+        gsap.set(dot, { x: e.clientX, y: e.clientY });
+        gsap.set(ring, { x: e.clientX, y: e.clientY });
+      }
+
+      // Smooth precision dot tracking
       gsap.to(dot, {
-        x: mouseX,
-        y: mouseY,
+        x: state.mouseX,
+        y: state.mouseY,
         duration: 0.08,
         ease: 'power2.out',
       });
     };
 
-    // Physics ticker loop for trailing ring velocity stretch & smooth follow
+    // Continuous physics render loop for trailing ring velocity stretch & elastic follow
     let animFrameId: number;
 
     const updatePhysics = () => {
       animFrameId = requestAnimationFrame(updatePhysics);
 
-      // Compute velocity
-      velX = mouseX - lastX;
-      velY = mouseY - lastY;
+      if (!state.initialized) return;
 
-      lastX += (mouseX - lastX) * 0.15;
-      lastY += (mouseY - lastY) * 0.15;
+      const velX = state.mouseX - state.lastX;
+      const velY = state.mouseY - state.lastY;
+
+      state.lastX += (state.mouseX - state.lastX) * 0.15;
+      state.lastY += (state.mouseY - state.lastY) * 0.15;
 
       const speed = Math.sqrt(velX * velX + velY * velY);
       const angle = Math.atan2(velY, velX) * (180 / Math.PI);
 
-      // Velocity squish/stretch parameters
+      // Organic velocity stretch
       const stretch = Math.min(speed * 0.015, 0.4);
-      const scaleX = 1 + stretch;
-      const scaleY = 1 - stretch * 0.6;
+      const scaleX = state.isHovered ? 1.6 : 1 + stretch;
+      const scaleY = state.isHovered ? 1.6 : 1 - stretch * 0.5;
 
       gsap.set(ring, {
-        x: lastX,
-        y: lastY,
-        rotation: speed > 2 ? angle : 0,
-        scaleX: isHovered ? 1.6 : scaleX,
-        scaleY: isHovered ? 1.6 : scaleY,
+        x: state.lastX,
+        y: state.lastY,
+        rotation: speed > 2 && !state.isHovered ? angle : 0,
+        scaleX,
+        scaleY,
       });
     };
 
     animFrameId = requestAnimationFrame(updatePhysics);
-
     window.addEventListener('mousemove', handleMouseMove);
 
-    // Global Event Delegation for Interactive Element Hover Reactions
+    // Global Event Delegation for Interactive Elements
     const handleMouseOver = (e: MouseEvent) => {
       const target = e.target as HTMLElement | null;
       if (!target) return;
@@ -85,7 +102,7 @@ export default function CustomCursor() {
       const projectCard = target.closest('#projects > div, #more-work a');
 
       if (clickable || projectCard) {
-        setIsHovered(true);
+        state.isHovered = true;
 
         if (projectCard) {
           setCursorText('VIEW');
@@ -118,7 +135,7 @@ export default function CustomCursor() {
       const projectCard = target.closest('#projects > div, #more-work a');
 
       if (clickable || projectCard) {
-        setIsHovered(false);
+        state.isHovered = false;
         setCursorText('');
 
         gsap.to(ring, {
@@ -134,22 +151,20 @@ export default function CustomCursor() {
       }
     };
 
-    // Click pulse reactions
+    // Click feedback pulse
     const handleMouseDown = () => {
-      setIsClicking(true);
       gsap.to(ring, { scale: 0.8, duration: 0.1, ease: 'power2.in' });
       gsap.to(dot, { scale: 1.8, duration: 0.1, ease: 'power2.in' });
     };
 
     const handleMouseUp = () => {
-      setIsClicking(false);
       gsap.to(ring, {
-        scale: isHovered ? 1.6 : 1,
+        scale: state.isHovered ? 1.6 : 1,
         duration: 0.4,
         ease: 'elastic.out(1.2, 0.4)',
       });
       gsap.to(dot, {
-        scale: isHovered ? 0.5 : 1,
+        scale: state.isHovered ? 0.5 : 1,
         duration: 0.3,
         ease: 'power2.out',
       });
@@ -162,28 +177,29 @@ export default function CustomCursor() {
 
     return () => {
       cancelAnimationFrame(animFrameId);
+      document.documentElement.classList.remove('has-custom-cursor');
       window.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseover', handleMouseOver);
       document.removeEventListener('mouseout', handleMouseOut);
       document.removeEventListener('mousedown', handleMouseDown);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isHovered]);
+  }, []);
 
   if (!isEnabled) return null;
 
   return (
     <>
-      {/* Precision Core Dot */}
+      {/* Precision Core Signal Dot */}
       <div
         ref={dotRef}
-        className="fixed top-0 left-0 w-2.5 h-2.5 bg-signal rounded-full pointer-events-none z-50 -translate-x-1/2 -translate-y-1/2 shadow-[0_0_10px_rgba(124,255,158,0.8)]"
+        className="fixed top-0 left-0 w-2.5 h-2.5 bg-signal rounded-full pointer-events-none z-50 shadow-[0_0_12px_rgba(124,255,158,0.8)]"
       />
 
       {/* Trailing Elastic Physics Ring with Contextual Hover State */}
       <div
         ref={ringRef}
-        className="fixed top-0 left-0 w-9 h-9 border border-signal/40 rounded-full pointer-events-none z-50 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center transition-colors duration-200"
+        className="fixed top-0 left-0 w-9 h-9 border border-signal/40 rounded-full pointer-events-none z-50 flex items-center justify-center transition-colors duration-200"
       >
         {/* Contextual Micro-Label (VIEW / TALK / OPEN) */}
         {cursorText && (
