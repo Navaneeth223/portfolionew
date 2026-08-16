@@ -11,7 +11,7 @@ export default function CustomCursor() {
   const [isEnabled, setIsEnabled] = useState(false);
   const [cursorText, setCursorText] = useState('');
 
-  // Refs for persistent physics state without triggering useEffect re-runs
+  // Ref for persistent physics & pointer state
   const stateRef = useRef({
     mouseX: -100,
     mouseY: -100,
@@ -26,28 +26,46 @@ export default function CustomCursor() {
     if (window.matchMedia('(pointer: coarse)').matches) return;
 
     setIsEnabled(true);
-    document.documentElement.classList.add('has-custom-cursor');
 
     const dot = dotRef.current;
     const ring = ringRef.current;
     if (!dot || !ring) return;
 
-    // Set initial centering offsets via GSAP once
-    gsap.set(dot, { xPercent: -50, yPercent: -50 });
-    gsap.set(ring, { xPercent: -50, yPercent: -50 });
+    // Center offsets and hide initially until first move
+    gsap.set([dot, ring], {
+      xPercent: -50,
+      yPercent: -50,
+      opacity: 0,
+      transformOrigin: 'center center',
+    });
 
     const state = stateRef.current;
 
-    const handleMouseMove = (e: MouseEvent) => {
-      state.mouseX = e.clientX;
-      state.mouseY = e.clientY;
+    const handlePointerMove = (e: MouseEvent | PointerEvent) => {
+      const clientX = e.clientX;
+      const clientY = e.clientY;
 
+      if (clientX === undefined || clientY === undefined) return;
+
+      state.mouseX = clientX;
+      state.mouseY = clientY;
+
+      // On first event: snap position instantly & fade in from 0 opacity
       if (!state.initialized) {
-        state.lastX = e.clientX;
-        state.lastY = e.clientY;
+        state.lastX = clientX;
+        state.lastY = clientY;
         state.initialized = true;
-        gsap.set(dot, { x: e.clientX, y: e.clientY });
-        gsap.set(ring, { x: e.clientX, y: e.clientY });
+
+        gsap.set([dot, ring], {
+          x: clientX,
+          y: clientY,
+        });
+
+        gsap.to([dot, ring], {
+          opacity: 1,
+          duration: 0.3,
+          ease: 'power2.out',
+        });
       }
 
       // Smooth precision dot tracking
@@ -76,7 +94,7 @@ export default function CustomCursor() {
       const speed = Math.sqrt(velX * velX + velY * velY);
       const angle = Math.atan2(velY, velX) * (180 / Math.PI);
 
-      // Organic velocity stretch
+      // Velocity stretch parameters
       const stretch = Math.min(speed * 0.015, 0.4);
       const scaleX = state.isHovered ? 1.6 : 1 + stretch;
       const scaleY = state.isHovered ? 1.6 : 1 - stretch * 0.5;
@@ -91,9 +109,13 @@ export default function CustomCursor() {
     };
 
     animFrameId = requestAnimationFrame(updatePhysics);
-    window.addEventListener('mousemove', handleMouseMove);
 
-    // Global Event Delegation for Interactive Elements
+    // Bind pointer & mouse events across window and document
+    window.addEventListener('pointermove', handlePointerMove, { passive: true });
+    window.addEventListener('mousemove', handlePointerMove, { passive: true });
+    window.addEventListener('pointerenter', handlePointerMove, { passive: true });
+
+    // Global Event Delegation for Interactive Hover States
     const handleMouseOver = (e: MouseEvent) => {
       const target = e.target as HTMLElement | null;
       if (!target) return;
@@ -116,7 +138,7 @@ export default function CustomCursor() {
 
         gsap.to(ring, {
           borderColor: '#7CFF9E',
-          backgroundColor: 'rgba(124, 255, 158, 0.12)',
+          backgroundColor: 'rgba(124, 255, 158, 0.15)',
           duration: 0.25,
         });
         gsap.to(dot, {
@@ -177,8 +199,9 @@ export default function CustomCursor() {
 
     return () => {
       cancelAnimationFrame(animFrameId);
-      document.documentElement.classList.remove('has-custom-cursor');
-      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('mousemove', handlePointerMove);
+      window.removeEventListener('pointerenter', handlePointerMove);
       document.removeEventListener('mouseover', handleMouseOver);
       document.removeEventListener('mouseout', handleMouseOut);
       document.removeEventListener('mousedown', handleMouseDown);
@@ -193,13 +216,13 @@ export default function CustomCursor() {
       {/* Precision Core Signal Dot */}
       <div
         ref={dotRef}
-        className="fixed top-0 left-0 w-2.5 h-2.5 bg-signal rounded-full pointer-events-none z-50 shadow-[0_0_12px_rgba(124,255,158,0.8)]"
+        className="fixed top-0 left-0 w-2.5 h-2.5 bg-signal rounded-full pointer-events-none z-50 shadow-[0_0_12px_rgba(124,255,158,0.8)] opacity-0"
       />
 
       {/* Trailing Elastic Physics Ring with Contextual Hover State */}
       <div
         ref={ringRef}
-        className="fixed top-0 left-0 w-9 h-9 border border-signal/40 rounded-full pointer-events-none z-50 flex items-center justify-center transition-colors duration-200"
+        className="fixed top-0 left-0 w-9 h-9 border border-signal/40 rounded-full pointer-events-none z-50 flex items-center justify-center transition-colors duration-200 opacity-0"
       >
         {/* Contextual Micro-Label (VIEW / TALK / OPEN) */}
         {cursorText && (

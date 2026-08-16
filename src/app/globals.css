@@ -35,12 +35,6 @@ body {
   selection-color: #0B0D0A;
 }
 
-/* Hide native browser pointer when custom cursor is active */
-html.has-custom-cursor,
-html.has-custom-cursor * {
-  cursor: none !important;
-}
-
 ::selection {
   background: #7CFF9E;
   color: #0B0D0A;
