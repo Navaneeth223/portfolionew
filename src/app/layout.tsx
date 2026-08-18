@@ -24,6 +24,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://navaneeth.dev'),
   title: 'Navaneeth KV — Full Stack Developer',
   description:
     'Full Stack Developer building real-time recruitment platforms at Druv360 & freelancing worldwide. React, Next.js, Node.js, Django, PostgreSQL, Three.js.',
@@ -46,6 +47,14 @@ export const metadata: Metadata = {
       'Full Stack Developer building real-time recruitment platforms at Druv360 & freelancing worldwide.',
     type: 'website',
     url: 'https://navaneeth.dev',
+    siteName: 'Navaneeth KV',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Navaneeth KV — Full Stack Developer',
+    description:
+      'Full Stack Developer building real-time recruitment platforms at Druv360 & freelancing worldwide.',
+    creator: '@navaneethkv',
   },
 };
 
